@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Life Counter</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #e0e0e0;
+            --accent-color: #00ff9d; /* Технологичный зеленый */
+            --secondary-color: #333;
+            --font-main: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        /* Стили для ввода */
+        .input-group {
+            display: none; /* Скрыто по умолчанию */
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        label {
+            font-size: 12px;
+            color: #888;
+            text-align: left;
+            margin-left: 5px;
+        }
+
+        input[type="datetime-local"] {
+            background: #111;
+            border: 1px solid var(--secondary-color);
+            color: var(--accent-color);
+            padding: 15px;
+            font-family: var(--font-main);
+            font-size: 16px;
+            border-radius: 4px;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="datetime-local"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 15px;
+            font-family: var(--font-main);
+            font-size: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button:hover {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        /* Стили для табло */
+        .display-group {
+            display: none; /* Скрыто по умолчанию */
+        }
+
+        .counter-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .counter-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .reset-btn {
+            margin-top: 50px;
+            border-color: #333;
+            color: #555;
+            font-size: 10px;
+            padding: 10px;
+        }
+        .reset-btn:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Анимация мигания курсора */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 30px;
+            background-color: var(--accent-color);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>System // Life_Counter</h1>
+
+        <!-- Экран ввода -->
+        <div id="inputScreen" class="input-group">
+            <label>INITIALIZE_BIRTH_DATE:</label>
+            <input type="datetime-local" id="birthDate">
+            <button onclick="saveDate()">[ СОХРАНИТЬ И ЗАПУСТИТЬ ]</button>
+        </div>
+
+        <!-- Экран табло -->
+        <div id="displayScreen" class="display-group">
+            <div class="counter-label">TOTAL_MINUTES_LIVED</div>
+            <div class="counter-value" id="counter">0</div>
+            <div class="cursor"></div>
+            
+            <button class="reset-btn" onclick="resetData()">[ СБРОС ДАННЫХ ]</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Раскрыть на весь экран
+
+        const inputScreen = document.getElementById('inputScreen');
+        const displayScreen = document.getElementById('displayScreen');
+        const counterElement = document.getElementById('counter');
+        const birthInput = document.getElementById('birthDate');
+
+        // Проверка, есть ли сохраненная дата
+        let savedDate = localStorage.getItem('birthDate');
+
+        if (savedDate) {
+            showDisplay();
+            startTimer(new Date(savedDate));
+        } else {
+            showInput();
+        }
+
+        function showInput() {
+            inputScreen.style.display = 'flex';
+            displayScreen.style.display = 'none';
+        }
+
+        function showDisplay() {
+            inputScreen.style.display = 'none';
+            displayScreen.style.display = 'block';
+        }
+
+        function saveDate() {
+            const dateValue = birthInput.value;
+            if (!dateValue) {
+                tg.showAlert("Ошибка: Введите дату рождения");
+                return;
+            }
+            localStorage.setItem('birthDate', dateValue);
+            showDisplay();
+            startTimer(new Date(dateValue));
+            // Отправляем данные боту (опционально)
+            tg.sendData(dateValue); 
+        }
+
+        function resetData() {
+            if(confirm("Вы уверены? Данные будут удалены.")) {
+                localStorage.removeItem('birthDate');
+                location.reload();
+            }
+        }
+
+        function startTimer(birthDate) {
+            function update() {
+                const now = new Date();
+                const diff = now - birthDate; // Разница в миллисекундах
+                
+                // Перевод в минуты
+                const minutes = Math.floor(diff / 60000);
+                
+                // Форматирование числа с пробелами (1 000 000)
+                counterElement.innerText = minutes.toLocaleString('ru-RU');
+            }
+
+            update(); // Запустить сразу
+            setInterval(update, 1000); // Обновлять каждую секунду
+        }
+    </script>
+</body>
+</html>
