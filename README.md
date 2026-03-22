@@ -1,2 +1,2 @@
 # Talub
-We only have time
+All we have is time
